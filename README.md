@@ -1,4 +1,4 @@
-# 📚 BookShelf — Book Manager
+#  BookShelf — Book Manager
 
 A full-stack Node.js application using **Express**, **Mongoose**, and **MongoDB** to manage a book collection. Includes a clean REST API and a polished browser-based UI.
 
@@ -70,7 +70,7 @@ Visit **http://localhost:3000** in your browser.
 
 ---
 
-## 📘 Book Schema
+##  Book Schema
 
 ```js
 {
