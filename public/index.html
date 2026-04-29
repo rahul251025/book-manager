@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BookShelf — Book Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1208;
+      --paper: #f5f0e8;
+      --cream: #ede8dc;
+      --amber: #c8811a;
+      --amber-light: #e8a83a;
+      --amber-dark: #9a5f0a;
+      --rust: #b84a1e;
+      --sage: #4a7c59;
+      --shadow: rgba(26, 18, 8, 0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 20% 10%, rgba(200,129,26,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 90%, rgba(184,74,30,0.06) 0%, transparent 50%);
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 2rem 3rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      border-bottom: 4px solid var(--amber);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 24px var(--shadow);
+    }
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: var(--amber-light);
+    }
+    .logo span { color: var(--paper); }
+    header p {
+      font-size: 0.85rem;
+      opacity: 0.6;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 300;
+    }
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    #db-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #6b6b6b;
+      transition: background 0.3s;
+    }
+    .dot.connected { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+    .dot.error { background: var(--rust); }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 16px var(--shadow), 0 0 0 1px rgba(200,129,26,0.1);
+    }
+    .card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 0.4rem;
+    }
+    .card-subtitle {
+      font-size: 0.82rem;
+      color: #888;
+      margin-bottom: 1.75rem;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 1.25rem; }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--amber-dark);
+      margin-bottom: 0.5rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--cream);
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      color: var(--ink);
+      background: var(--paper);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(200,129,26,0.12);
+      background: white;
+    }
+    input::placeholder { color: #aaa; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.85rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .btn-primary {
+      background: var(--amber);
+      color: white;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    .btn-primary:hover { background: var(--amber-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,129,26,0.35); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-danger {
+      background: transparent;
+      color: var(--rust);
+      border: 1.5px solid rgba(184,74,30,0.3);
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      border-radius: 6px;
+    }
+    .btn-danger:hover { background: var(--rust); color: white; border-color: var(--rust); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 0.85rem 1.4rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 1000;
+      max-width: 340px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { background: var(--sage); color: white; }
+    #toast.error { background: var(--rust); color: white; }
+
+    /* ── Books List ── */
+    .books-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    #book-count {
+      font-size: 0.8rem;
+      background: var(--amber);
+      color: white;
+      padding: 0.25rem 0.65rem;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .book-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .book-item {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      box-shadow: 0 1px 8px var(--shadow), 0 0 0 1px rgba(200,129,26,0.07);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: slideIn 0.3s ease forwards;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .book-item:hover { transform: translateY(-2px); box-shadow: 0 4px 20px var(--shadow); }
+
+    .book-spine {
+      width: 6px;
+      height: 60px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .book-info { flex: 1; min-width: 0; }
+    .book-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .book-author {
+      font-size: 0.83rem;
+      color: #777;
+      margin-top: 0.2rem;
+    }
+    .book-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.4rem;
+    }
+    .book-price {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--sage);
+    }
+    .book-date {
+      font-size: 0.72rem;
+      color: #bbb;
+    }
+
+    .book-id {
+      font-size: 0.65rem;
+      color: #ccc;
+      font-family: monospace;
+      margin-top: 0.3rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #bbb;
+    }
+    .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
+    .empty-state h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      color: #ccc;
+      margin-bottom: 0.5rem;
+    }
+    .empty-state p { font-size: 0.85rem; }
+
+    /* ── Loading ── */
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #bbb;
+      font-size: 0.9rem;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--cream);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── API Reference ── */
+    .api-card {
+      background: var(--ink);
+      color: var(--paper);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-top: 1.5rem;
+    }
+    .api-card .card-title { color: var(--amber-light); }
+    .api-card .card-subtitle { color: rgba(245,240,232,0.5); }
+    .api-route {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(245,240,232,0.08);
+      font-size: 0.83rem;
+    }
+    .api-route:last-child { border-bottom: none; }
+    .method {
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.7rem;
+      min-width: 52px;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+    .get { background: rgba(74,124,89,0.3); color: #6ee7b7; }
+    .post { background: rgba(200,129,26,0.3); color: var(--amber-light); }
+    .del { background: rgba(184,74,30,0.3); color: #fca5a5; }
+    .api-path { font-family: monospace; opacity: 0.8; }
+    .api-desc { opacity: 0.45; margin-left: auto; font-size: 0.75rem; }
+
+    @media (max-width: 800px) {
+      .container { grid-template-columns: 1fr; }
+      header { padding: 1.25rem 1.5rem; }
+      .logo { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Book<span>Shelf</span></div>
+    <p>Node.js · Express · Mongoose · MongoDB</p>
+  </div>
+  <div class="header-right">
+    <div id="db-status">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── Left Column: Add Form + API Reference ── -->
+  <aside>
+    <div class="card">
+      <div class="card-title">Add New Book</div>
+      <div class="card-subtitle">Fill in the fields to add a book to the collection</div>
+
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" placeholder="e.g. The Great Gatsby" />
+      </div>
+      <div class="form-group">
+        <label for="author">Author</label>
+        <input type="text" id="author" placeholder="e.g. F. Scott Fitzgerald" />
+      </div>
+      <div class="form-group">
+        <label for="price">Price (₹ / $)</label>
+        <input type="number" id="price" placeholder="e.g. 299" min="0" step="0.01" />
+      </div>
+
+      <button class="btn btn-primary" onclick="addBook()">
+        <span>＋</span> Add Book
+      </button>
+    </div>
+
+    <!-- API Reference -->
+    <div class="api-card">
+      <div class="card-title">REST API Reference</div>
+      <div class="card-subtitle">Available endpoints</div>
+
+      <div class="api-route">
+        <span class="method post">POST</span>
+        <span class="api-path">/api/books</span>
+        <span class="api-desc">Add book</span>
+      </div>
+      <div class="api-route">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/books</span>
+        <span class="api-desc">All books</span>
+      </div>
+      <div class="api-route">
+        <span class="method get">GET</span>
+        <span class="api-path">/api/books/:id</span>
+        <span class="api-desc">Single book</span>
+      </div>
+      <div class="api-route">
+        <span class="method del">DEL</span>
+        <span class="api-path">/api/books/:id</span>
+        <span class="api-desc">Delete book</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Right Column: Book List ── -->
+  <main>
+    <div class="card">
+      <div class="books-header">
+        <div>
+          <div class="card-title">Book Collection</div>
+          <div class="card-subtitle">All books stored in MongoDB</div>
+        </div>
+        <span id="book-count">0 books</span>
+      </div>
+
+      <div id="books-container">
+        <div class="loading">
+          <div class="spinner"></div>
+          Fetching books from MongoDB…
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast"></div>
+
+<script>
+  const API = '/api/books';
+  const colors = ['#c8811a','#b84a1e','#4a7c59','#5b6fa4','#7a4e9a','#2e8b8b'];
+
+  // ── Utilities ──────────────────────────────
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `show ${type}`;
+    setTimeout(() => toast.className = '', 3200);
+  }
+
+  function colorFor(id) {
+    const n = parseInt(id.slice(-4), 16) % colors.length;
+    return colors[n];
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  // ── Set connection status ──────────────────
+  function setStatus(connected) {
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    dot.className = 'dot ' + (connected ? 'connected' : 'error');
+    txt.textContent = connected ? 'MongoDB Connected' : 'Connection Error';
+  }
+
+  // ── Render Books ───────────────────────────
+  function renderBooks(books) {
+    const container = document.getElementById('books-container');
+    const countEl = document.getElementById('book-count');
+    countEl.textContent = `${books.length} book${books.length !== 1 ? 's' : ''}`;
+
+    if (!books.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📚</div>
+          <h3>No books yet</h3>
+          <p>Add your first book using the form on the left.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="book-grid">${books.map(book => `
+      <div class="book-item" id="book-${book._id}">
+        <div class="book-spine" style="background:${colorFor(book._id)}"></div>
+        <div class="book-info">
+          <div class="book-title" title="${book.title}">${book.title}</div>
+          <div class="book-author">by ${book.author}</div>
+          <div class="book-meta">
+            <span class="book-price">₹${parseFloat(book.price).toFixed(2)}</span>
+            <span class="book-date">Added ${formatDate(book.createdAt)}</span>
+          </div>
+          <div class="book-id">ID: ${book._id}</div>
+        </div>
+        <button class="btn btn-danger" onclick="deleteBook('${book._id}', '${book.title.replace(/'/g,"\\'")}')">
+          🗑 Delete
+        </button>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // ── Fetch all books ────────────────────────
+  async function loadBooks() {
+    try {
+      const res = await fetch(API);
+      const data = await res.json();
+      setStatus(true);
+      renderBooks(data.data || []);
+    } catch (err) {
+      setStatus(false);
+      document.getElementById('books-container').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <h3>Could not connect</h3>
+          <p>Make sure MongoDB and the Node.js server are running.</p>
+        </div>`;
+    }
+  }
+
+  // ── Add a book ─────────────────────────────
+  async function addBook() {
+    const title  = document.getElementById('title').value.trim();
+    const author = document.getElementById('author').value.trim();
+    const price  = document.getElementById('price').value;
+
+    if (!title || !author || price === '') {
+      showToast('Please fill in all three fields.', 'error'); return;
+    }
+    if (isNaN(price) || Number(price) < 0) {
+      showToast('Price must be a valid non-negative number.', 'error'); return;
+    }
+
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, author, price: Number(price) })
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || 'Failed to add book');
+
+      showToast(`"${title}" added successfully! 🎉`);
+      document.getElementById('title').value = '';
+      document.getElementById('author').value = '';
+      document.getElementById('price').value = '';
+      loadBooks();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Delete a book ──────────────────────────
+  async function deleteBook(id, title) {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+
+    try {
+      const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || 'Failed to delete');
+
+      // Animate removal
+      const el = document.getElementById(`book-${id}`);
+      if (el) { el.style.transition = 'all 0.3s'; el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; }
+      setTimeout(loadBooks, 300);
+      showToast(`"${title}" deleted.`);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Allow Enter key to submit ──────────────
+  ['title','author','price'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') addBook();
+    });
+  });
+
+  // ── Init ───────────────────────────────────
+  loadBooks();
+</script>
+</body>
+</html>
